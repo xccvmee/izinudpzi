@@ -1,5 +1,5 @@
 # izinudpzi
 Add IP Licence UDPZI
-```
-u
+```bash
+wget -qO- https://raw.githubusercontent.com/xccvmee/izinudpzi/main/add-ip.sh | bash
 ```
