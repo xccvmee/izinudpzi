@@ -1,9 +1,5 @@
 #!/bin/bash
 
-safe_exit() {
-    return "$1" 2>/dev/null || exit "$1"
-}
-
 # --- 1. SET ZONA WAKTU ---
 timedatectl set-timezone Asia/Jakarta 2>/dev/null
 export TZ="Asia/Jakarta"
@@ -12,14 +8,16 @@ echo "=============================================="
 echo "      AUTO REGISTRASI IP KE GITHUB VIP        "
 echo "=============================================="
 
-# --- 2. FORM INPUT DATA ---
-read -p "Masukkan Nama Klien : " NAMA
-read -p "Masa Aktif (Hari) [Ketik 2099 untuk Lifetime] : " HARI
+# --- 2. FORM INPUT DATA (Fix Piped Bash) ---
+# Tambahan </dev/tty memaksa sistem membaca input dari keyboard pengguna
+read -p "Masukkan Nama Klien : " NAMA </dev/tty
+read -p "Masa Aktif (Hari) [Ketik 2099 untuk Lifetime] : " HARI </dev/tty
 
-# Validasi input tidak boleh kosong
+# Validasi input tidak boleh kosong (Hard Stop)
 if [ -z "$NAMA" ] || [ -z "$HARI" ]; then
-    echo "❌ Nama dan Masa Aktif tidak boleh kosong!"
-    safe_exit 1
+    echo "❌ ERROR: Nama dan Masa Aktif tidak boleh kosong!"
+    echo "Proses registrasi dibatalkan."
+    exit 1
 fi
 
 # Logika penghitungan masa aktif
@@ -59,13 +57,12 @@ IP_VPS=$(curl -4 -sS ifconfig.me)
 
 if [ -z "$IP_VPS" ]; then
     echo "❌ Gagal mendapatkan IP VPS. Cek koneksi internet."
-    safe_exit 1
+    exit 1
 fi
 
 echo "IP Publik   : $IP_VPS"
 echo "Format Baru : ### $NAMA $EXP_DATE $IP_VPS"
 
-# Format teks baru yang akan ditulis sesuai format list Anda
 NEW_LINE="### $NAMA $EXP_DATE $IP_VPS"
 
 # URL API GitHub
@@ -79,7 +76,7 @@ SHA=$(echo "$RESPONSE" | jq -r .sha)
 
 if [ "$SHA" == "null" ] || [ -z "$SHA" ]; then
     echo "❌ Error: File tidak ditemukan atau Token salah/kadaluarsa."
-    safe_exit 1
+    exit 1
 fi
 
 OLD_CONTENT=$(echo "$RESPONSE" | jq -r .content | base64 --decode)
@@ -89,7 +86,6 @@ ESCAPED_IP=$(echo "$IP_VPS" | sed 's/\./\\./g')
 # --- 5. LOGIKA UPDATE / TAMBAH IP ---
 if echo "$OLD_CONTENT" | grep -qE "\b${ESCAPED_IP}\b"; then
     echo "⚠️ IP $IP_VPS sudah terdaftar. Menimpa baris lama dengan pembaruan..."
-    # Menghapus sebaris penuh yang mengandung IP, dan menggantinya dengan format baru
     NEW_CONTENT=$(echo "$OLD_CONTENT" | sed -E "s/.*\\b${ESCAPED_IP}\\b.*/${NEW_LINE}/g")
     COMMIT_MSG="Update Lisensi: $NAMA ($IP_VPS)"
 else
@@ -119,7 +115,7 @@ if echo "$UPDATE_RESPONSE" | jq -e .content.sha >/dev/null 2>&1; then
 else
     echo "❌ Gagal mengupdate file. Pesan error dari GitHub:"
     echo "$UPDATE_RESPONSE" | jq -r .message
-    safe_exit 1
+    exit 1
 fi
 
-safe_exit 0
+exit 0
