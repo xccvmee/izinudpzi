@@ -8,17 +8,17 @@ echo "=============================================="
 echo "      AUTO REGISTRASI IP KE GITHUB VIP        "
 echo "=============================================="
 
-# --- 2. FORM INPUT DATA (Fix Piped Bash) ---
-# Tambahan </dev/tty memaksa sistem membaca input dari keyboard pengguna
-read -p "Masukkan Nama Klien : " NAMA </dev/tty
-read -p "Masa Aktif (Hari) [Ketik 2099 untuk Lifetime] : " HARI </dev/tty
+# --- 2. FORM INPUT DATA (STRICT INTERACTIVE) ---
+# Menggunakan loop 'while' agar terus bertanya jika input kosong
+NAMA=""
+while [ -z "$NAMA" ]; do
+    read -p "Masukkan Nama Klien : " NAMA </dev/tty
+done
 
-# Validasi input tidak boleh kosong (Hard Stop)
-if [ -z "$NAMA" ] || [ -z "$HARI" ]; then
-    echo "❌ ERROR: Nama dan Masa Aktif tidak boleh kosong!"
-    echo "Proses registrasi dibatalkan."
-    exit 1
-fi
+HARI=""
+while [ -z "$HARI" ]; do
+    read -p "Masa Aktif (Hari) [Ketik 2099 untuk Lifetime] : " HARI </dev/tty
+done
 
 # Logika penghitungan masa aktif
 if [ "$HARI" == "2099" ]; then
